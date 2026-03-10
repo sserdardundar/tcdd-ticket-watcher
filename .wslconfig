@@ -1,0 +1,14 @@
+# WSL2 Configuration for Docker
+# Place this file in: C:\Users\YourUsername\.wslconfig
+
+[wsl2]
+# Limit WSL2 memory usage (adjust based on your 8GB RAM)
+memory=4GB
+# Limit CPU cores (optional)
+processors=2
+# Swap file size
+swap=2GB
+# Disable page reporting (can save memory)
+pageReporting=false
+# Disable nested virtualization (if not needed)
+nestedVirtualization=false

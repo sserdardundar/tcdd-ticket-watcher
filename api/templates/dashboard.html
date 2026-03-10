@@ -1,0 +1,1943 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCDD Watcher - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           CSS VARIABLES & THEME
+           ============================================ */
+        :root {
+            --bg-primary: #09090b;
+            --bg-secondary: #0f0f16;
+            --bg-tertiary: #18181b;
+            --bg-card: rgba(24, 24, 27, 0.6);
+            --bg-card-hover: rgba(39, 39, 42, 0.8);
+            --border-color: rgba(255, 255, 255, 0.06);
+            --border-glow: rgba(99, 102, 241, 0.5);
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --success-color: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.3);
+            --danger-color: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.3);
+            --warning-color: #f59e0b;
+            --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 30px rgba(79, 70, 229, 0.15);
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --transition-fast: 0.2s ease;
+            --transition-normal: 0.3s ease;
+            --transition-slow: 0.5s ease;
+        }
+
+        /* ============================================
+           RESET & BASE STYLES
+           ============================================ */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+            overflow-y: auto;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Animated background - Dark purple gradient */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(139, 92, 246, 0.05) 50%, rgba(0, 0, 0, 0.8) 100%),
+                radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ============================================
+           NAVBAR
+           ============================================ */
+        .navbar {
+            background: rgba(15, 15, 35, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 0 2rem;
+        }
+
+        .navbar-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .brand-icon {
+            font-size: 1.8rem;
+            filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: var(--transition-normal);
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger-color);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* ============================================
+           MAIN CONTENT
+           ============================================ */
+        .main-content {
+            position: relative;
+            z-index: 1;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 1.5rem;
+            box-sizing: border-box;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success-color);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success-color);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 var(--success-glow);
+            }
+            50% {
+                opacity: 0.7;
+                box-shadow: 0 0 0 8px transparent;
+            }
+        }
+
+        /* ============================================
+           CARDS
+           ============================================ */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            overflow: hidden;
+            transition: transform var(--transition-normal),
+                border-color var(--transition-normal),
+                box-shadow var(--transition-normal);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .card:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .card-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .form-card {
+            margin-bottom: 2rem;
+        }
+
+        .form-card .card-header {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+        }
+
+        /* ============================================
+           FORMS
+           ============================================ */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .reverse-btn-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 0.75rem;
+        }
+
+        .btn-reverse {
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .btn-reverse:hover {
+            background: rgba(99, 102, 241, 0.4);
+            transform: scale(1.1);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .btn-reverse:focus {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 2px;
+        }
+
+        .form-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .form-control {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 0.85rem 1rem;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            transition: var(--transition-fast);
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-control:invalid {
+            border-color: var(--danger-color);
+        }
+
+        .form-control option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .quick-dates {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-date-btn {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-fast);
+            font-family: inherit;
+        }
+
+        .quick-date-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        .quick-date-btn:active {
+            transform: scale(0.95);
+        }
+
+        .input-group {
+            display: flex;
+        }
+
+        .input-group .form-control {
+            border-radius: 12px 0 0 12px;
+            flex: 1;
+        }
+
+        .btn-paste {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-left: none;
+            border-radius: 0 12px 12px 0;
+            padding: 0 1rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-paste:hover {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--accent-primary);
+        }
+
+        .btn-paste:focus {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: -2px;
+        }
+
+        /* ============================================
+           BUTTONS
+           ============================================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .form-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+
+        .btn-danger-sm {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger-color);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: var(--transition-fast);
+            font-family: inherit;
+            font-weight: 500;
+        }
+
+        .btn-danger-sm:hover {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: var(--danger-color);
+        }
+
+        .btn-buy {
+            background: var(--accent-gradient);
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: var(--transition-normal);
+        }
+
+        .btn-buy:hover {
+            transform: translateX(3px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-relook {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning-color);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: var(--transition-fast);
+            font-family: inherit;
+            font-weight: 500;
+        }
+
+        .btn-relook:hover {
+            background: rgba(245, 158, 11, 0.25);
+            border-color: var(--warning-color);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        /* ============================================
+           DASHBOARD GRID
+           ============================================ */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 1.25rem;
+            align-items: start;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ============================================
+           WATCHERS LIST
+           ============================================ */
+        .watchers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: calc(100vh - 400px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding-right: 0.5rem;
+        }
+
+        .watchers-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .watchers-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .watchers-list::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 3px;
+        }
+
+        .watcher-card-group {
+            background: rgba(39, 39, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: var(--transition-normal);
+            cursor: pointer;
+        }
+
+        .watcher-card-group:hover {
+            background: rgba(39, 39, 42, 0.8);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .watcher-card-group.selected {
+            border-color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .watcher-header {
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .watcher-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .watcher-route-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .badge-count {
+            background: var(--success-color);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 700;
+            min-width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+        }
+
+        .watcher-meta-line {
+            display: flex;
+            gap: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            flex-wrap: wrap;
+        }
+
+        .meta-tag {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .watcher-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .watcher-toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            border: 1px solid var(--border-color);
+        }
+
+        .watcher-toggle.active {
+            background: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .watcher-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            transition: var(--transition-fast);
+        }
+
+        .watcher-toggle.active::after {
+            left: calc(100% - 20px);
+        }
+
+        .watcher-delete {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: var(--transition-fast);
+        }
+
+        .watcher-delete:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger-color);
+        }
+
+        /* ============================================
+           TICKETS TABLE
+           ============================================ */
+        .tickets-card .card-header {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.02) 100%);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            max-width: 100%;
+            margin: 0 -1rem;
+            padding: 0 1rem;
+        }
+
+        .table-wrapper::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: var(--accent-primary);
+            border-radius: 3px;
+        }
+
+        .tickets-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 0.4rem;
+            margin-top: 0.5rem;
+            table-layout: fixed;
+            min-width: 800px;
+        }
+
+        .tickets-table th {
+            padding: 0.75rem 0.8rem;
+            text-align: left;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .tickets-table th:nth-child(1) {
+            width: 10%;
+        }
+
+        .tickets-table th:nth-child(2) {
+            width: 28%;
+        }
+
+        .tickets-table th:nth-child(3) {
+            width: 14%;
+        }
+
+        .tickets-table th:nth-child(4) {
+            width: 20%;
+        }
+
+        .tickets-table th:nth-child(5) {
+            width: 12%;
+        }
+
+        .tickets-table th:nth-child(6) {
+            width: 16%;
+        }
+
+        .tickets-table td {
+            padding: 0.75rem 0.8rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tickets-table tr {
+            transition: var(--transition-fast);
+        }
+
+        .tickets-table tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .tickets-table td:first-child {
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .tickets-table td:last-child {
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .time-display {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .time-display:has(.time-separator) {
+            flex-direction: row;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .time-primary {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+
+        .time-secondary {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .time-separator {
+            color: var(--accent-primary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .route-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: nowrap;
+            min-width: 0;
+        }
+
+        .route-pill span:last-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+
+        .route-arrow {
+            color: var(--accent-primary);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .train-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(139, 92, 246, 0.25);
+            color: #c4b5fd;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .seat-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            padding: 0.3rem 0.6rem;
+            background: rgba(16, 185, 129, 0.25);
+            color: #6ee7b7;
+            font-weight: 700;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            gap: 0.25rem;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            white-space: nowrap;
+        }
+
+        .seat-badge.business {
+            background: rgba(59, 130, 246, 0.25);
+            color: #93c5fd;
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+
+        .seat-badge.loca {
+            background: rgba(96, 165, 250, 0.25);
+            color: #bfdbfe;
+            border-color: rgba(96, 165, 250, 0.4);
+        }
+
+        .seat-badge-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .price-text {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        /* ============================================
+           EMPTY & LOADING STATES
+           ============================================ */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-text {
+            font-size: 0.95rem;
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg,
+                    rgba(255, 255, 255, 0.03) 25%,
+                    rgba(255, 255, 255, 0.08) 50%,
+                    rgba(255, 255, 255, 0.03) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .skeleton-text {
+            height: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .skeleton-text.short {
+            width: 60%;
+        }
+
+        .skeleton-text.medium {
+            width: 80%;
+        }
+
+        /* ============================================
+           TOAST NOTIFICATIONS
+           ============================================ */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .toast {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease;
+            min-width: 280px;
+        }
+
+        .toast.success {
+            border-color: var(--success-color);
+        }
+
+        .toast.error {
+            border-color: var(--danger-color);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+
+        /* ============================================
+           MODAL
+           ============================================ */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-title {
+            margin-bottom: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .form-group-modal {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        /* ============================================
+           RESPONSIVE DESIGN
+           ============================================ */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0 1rem;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                gap: 0.5rem;
+            }
+
+            .brand span:last-child {
+                display: none;
+            }
+
+            .tickets-table {
+                font-size: 0.85rem;
+            }
+
+            .tickets-table th,
+            .tickets-table td {
+                padding: 0.75rem 1rem;
+            }
+
+            .tickets-table th:nth-child(1),
+            .tickets-table th:nth-child(2),
+            .tickets-table th:nth-child(3),
+            .tickets-table th:nth-child(4),
+            .tickets-table th:nth-child(5),
+            .tickets-table th:nth-child(6) {
+                width: auto;
+            }
+
+            .route-pill {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+            }
+
+            .train-badge {
+                font-size: 0.7rem;
+                padding: 0.2rem 0.5rem;
+            }
+
+            .toast-container {
+                bottom: 1rem;
+                right: 1rem;
+                left: 1rem;
+            }
+
+            .toast {
+                min-width: auto;
+            }
+        }
+
+        /* ============================================
+           ACCESSIBILITY
+           ============================================ */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="navbar-inner">
+            <div class="brand">
+                <span class="brand-icon" aria-hidden="true">🚄</span>
+                <span>TCDD Watcher</span>
+            </div>
+            <div class="nav-links">
+                <a href="javascript:void(0)" onclick="openSettings()" class="nav-link" aria-label="Open settings">
+                    ⚙️ Settings
+                </a>
+                <a href="/logout" class="nav-link btn-logout" aria-label="Logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <span aria-hidden="true">🎫</span>
+                <span>Ticket Dashboard</span>
+            </h1>
+            <div class="status-badge" role="status" aria-live="polite">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span>Live Monitor</span>
+            </div>
+        </div>
+
+        <!-- Add Watcher Form -->
+        <div class="card form-card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <span aria-hidden="true">➕</span>
+                    <span>New Watcher</span>
+                </h2>
+            </div>
+            <div class="card-body">
+                <form action="/rules" method="POST" id="watcherForm" novalidate>
+                    <div class="form-grid">
+                        <!-- From Station -->
+                        <div class="form-group">
+                            <label class="form-label" for="from_station">From</label>
+                            <select name="from_station" id="from_station" class="form-control" required aria-required="true">
+                                {% for st in stations %}
+                                <option value="{{ st }}" {% if st=="ANKARA GAR" %}selected{% endif %}>{{ st }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Reverse Button -->
+                        <div class="form-group reverse-btn-container">
+                            <label class="form-label">&nbsp;</label>
+                            <button type="button" class="btn-reverse" onclick="reverseStations()" title="Swap stations" aria-label="Swap departure and arrival stations">
+                                ↔️
+                            </button>
+                        </div>
+
+                        <!-- To Station -->
+                        <div class="form-group">
+                            <label class="form-label" for="to_station">To</label>
+                            <select name="to_station" id="to_station" class="form-control" required aria-required="true">
+                                {% for st in stations %}
+                                <option value="{{ st }}" {% if st=="İSTANBUL(SÖĞÜTLÜÇEŞME)" %}selected{% endif %}>{{ st }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Date -->
+                        <div class="form-group">
+                            <label class="form-label" for="dateInput">Date</label>
+                            <input type="date" name="date" required id="dateInput" class="form-control" aria-required="true">
+                            <div class="quick-dates" role="group" aria-label="Quick date selection">
+                                <button type="button" class="quick-date-btn" data-days="0" aria-label="Select today">Today</button>
+                                <button type="button" class="quick-date-btn" data-days="1" aria-label="Select tomorrow">Tomorrow</button>
+                                <button type="button" class="quick-date-btn" data-days="7" aria-label="Select one week from today">+1 Week</button>
+                            </div>
+                        </div>
+
+                        <!-- Start Time -->
+                        <div class="form-group">
+                            <label class="form-label" for="start_time">Depart After</label>
+                            <select name="start_time" id="start_time" class="form-control">
+                                <option value="00:00">00:00</option>
+                                <option value="06:00" selected>06:00</option>
+                                <option value="08:00">08:00</option>
+                                <option value="10:00">10:00</option>
+                                <option value="12:00">12:00</option>
+                                <option value="14:00">14:00</option>
+                                <option value="16:00">16:00</option>
+                                <option value="18:00">18:00</option>
+                                <option value="20:00">20:00</option>
+                            </select>
+                        </div>
+
+                        <!-- End Time -->
+                        <div class="form-group">
+                            <label class="form-label" for="end_time">Depart Before</label>
+                            <select name="end_time" id="end_time" class="form-control">
+                                <option value="12:00">12:00</option>
+                                <option value="14:00">14:00</option>
+                                <option value="16:00">16:00</option>
+                                <option value="18:00">18:00</option>
+                                <option value="20:00">20:00</option>
+                                <option value="22:00">22:00</option>
+                                <option value="23:59" selected>23:59</option>
+                            </select>
+                        </div>
+
+                        <!-- Ticket Type -->
+                        <div class="form-group">
+                            <label class="form-label" for="ticket_type">Ticket Type</label>
+                            <select name="ticket_type" id="ticket_type" class="form-control">
+                                <option value="regular">🎫 Regular (Ekonomi Only)</option>
+                                <option value="all">💎 All Classes (Ekonomi + Business)</option>
+                            </select>
+                        </div>
+
+                        <!-- Chat ID -->
+                        <div class="form-group">
+                            <label class="form-label" for="chatIdInput">Telegram Chat ID</label>
+                            <div class="input-group">
+                                <input type="number" name="chat_id" id="chatIdInput" value="{{ default_chat_id }}" required class="form-control" aria-required="true" placeholder="Enter your Telegram Chat ID">
+                                <button type="button" id="pasteBtn" class="btn-paste" title="Paste from clipboard" aria-label="Paste chat ID from clipboard">
+                                    📋
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Submit -->
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <span aria-hidden="true">🔍</span>
+                                <span>Start Watching</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Active Watchers -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <span aria-hidden="true">📡</span>
+                        <span>Active Watchers</span>
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div id="rulesList" class="watchers-list" role="list" aria-label="Active watchers">
+                        <div class="empty-state">
+                            <div class="empty-icon" aria-hidden="true">⏳</div>
+                            <div class="empty-text">Loading watchers...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Found Tickets -->
+            <div class="card tickets-card">
+                <div class="card-header">
+                    <h3 class="card-title" id="ticketsTitle">
+                        <span aria-hidden="true">🎫</span>
+                        <span>Found Tickets (All)</span>
+                    </h3>
+                    <div class="header-actions">
+                        <button class="btn-danger-sm" onclick="clearHistory()" title="Clear all ticket history" aria-label="Clear all ticket history">
+                            🗑️ Clear History
+                        </button>
+                        <div class="status-badge">
+                            <span class="status-dot" aria-hidden="true"></span>
+                            <span>LIVE</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-wrapper">
+                        <table class="tickets-table" role="table" aria-label="Found tickets">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Route</th>
+                                    <th>Departure → Arrival</th>
+                                    <th>Seats</th>
+                                    <th>Price</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ticketsBody">
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="empty-state">
+                                            <div class="empty-icon" aria-hidden="true">📡</div>
+                                            <div class="empty-text">Waiting for tickets...</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal" role="dialog" aria-labelledby="settingsModalTitle" aria-hidden="true">
+        <div class="modal-content">
+            <h3 class="modal-title" id="settingsModalTitle">Global Settings</h3>
+            <div class="form-group-modal">
+                <label for="settingInterval" style="display:block; margin-bottom: 0.5rem;">Check Interval (Minutes)</label>
+                <input type="number" id="settingInterval" class="form-control" min="1" max="10" value="5" aria-required="true">
+                <small style="color:var(--text-secondary); display:block; margin-top:0.5rem;">Range: 1 - 10 minutes</small>
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeSettings()" class="btn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-primary);">
+                    Cancel
+                </button>
+                <button onclick="saveSettings()" class="btn" style="background:var(--accent-primary); color:white; border:none;">
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // GLOBAL STATE
+        // ============================================
+        let globalData = { rules: [], matches: [] };
+        let selectedRuleId = null;
+        let pollInterval = null;
+        let isPolling = false;
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            // Handle both DD.MM.YYYY and YYYY-MM-DD formats
+            if (dateStr.includes('.')) {
+                return dateStr;
+            }
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}.${parts[1]}.${parts[0]}`;
+            }
+            return dateStr;
+        }
+
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            return timeStr.length === 5 ? timeStr : timeStr.substring(0, 5);
+        }
+
+        // ============================================
+        // TOAST NOTIFICATIONS
+        // ============================================
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <span aria-hidden="true">${type === 'success' ? '✓' : '✕'}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // ============================================
+        // FORM HANDLING
+        // ============================================
+        function reverseStations() {
+            const fromSelect = document.getElementById('from_station');
+            const toSelect = document.getElementById('to_station');
+            if (fromSelect && toSelect) {
+                const temp = fromSelect.value;
+                fromSelect.value = toSelect.value;
+                toSelect.value = temp;
+            }
+        }
+
+        function initializeDateInput() {
+            const dateInput = document.getElementById('dateInput');
+            if (dateInput) {
+                const today = new Date().toISOString().split("T")[0];
+                dateInput.min = today;
+                if (!dateInput.value) {
+                    dateInput.value = today;
+                }
+            }
+        }
+
+        function initializeQuickDateButtons() {
+            document.querySelectorAll('.quick-date-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const days = parseInt(btn.dataset.days);
+                    const date = new Date();
+                    date.setDate(date.getDate() + days);
+                    const dateInput = document.getElementById('dateInput');
+                    if (dateInput) {
+                        dateInput.value = date.toISOString().split("T")[0];
+                    }
+                });
+            });
+        }
+
+        function initializePasteButton() {
+            const pasteBtn = document.getElementById('pasteBtn');
+            const chatIdInput = document.getElementById('chatIdInput');
+
+            if (pasteBtn && chatIdInput) {
+                pasteBtn.addEventListener('click', async () => {
+                    try {
+                        const text = await navigator.clipboard.readText();
+                        if (text) {
+                            chatIdInput.value = text.trim();
+                            showToast('Pasted from clipboard!', 'success');
+                        }
+                    } catch (err) {
+                        showToast('Failed to paste: ' + err.message, 'error');
+                    }
+                });
+            }
+        }
+
+        function initializeForm() {
+            const form = document.getElementById('watcherForm');
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    const submitBtn = document.getElementById('submitBtn');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span aria-hidden="true">⏳</span><span>Creating...</span>';
+                    }
+                    showToast('Creating watcher...', 'success');
+                });
+            }
+        }
+
+        // ============================================
+        // WATCHER RENDERING
+        // ============================================
+        function selectRule(ruleId) {
+            if (selectedRuleId === ruleId) {
+                selectedRuleId = null;
+            } else {
+                selectedRuleId = ruleId;
+            }
+            renderWatchers();
+            renderTickets();
+        }
+
+        function renderWatchers() {
+            const rulesContainer = document.getElementById('rulesList');
+            if (!rulesContainer) return;
+
+            if (globalData.rules.length === 0) {
+                rulesContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon" aria-hidden="true">📭</div>
+                        <div class="empty-text">No active watchers. Create one above!</div>
+                    </div>`;
+                return;
+            }
+
+            const matchesByRule = {};
+            globalData.matches.forEach(m => {
+                const rid = m.rule_id || 'unknown';
+                if (!matchesByRule[rid]) matchesByRule[rid] = 0;
+                matchesByRule[rid]++;
+            });
+
+            rulesContainer.innerHTML = globalData.rules.map(r => {
+                const isSelected = r.id === selectedRuleId;
+                const matchCount = matchesByRule[r.id] || 0;
+                const isActive = r.enabled !== false;
+
+                return `
+                <div class="watcher-card-group ${isSelected ? 'selected' : ''}" 
+                     onclick="selectRule('${r.id}')" 
+                     role="button"
+                     tabindex="0"
+                     aria-label="Watcher for ${r.route}"
+                     onkeypress="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectRule('${r.id}')}">
+                    <div class="watcher-header">
+                        <div class="watcher-info">
+                            <div class="watcher-route-title">
+                                ${escapeHtml(r.route)}
+                                ${matchCount > 0 ? `<span class="badge-count">${matchCount}</span>` : ''}
+                            </div>
+                            <div class="watcher-meta-line">
+                                <span class="meta-tag">📅 ${formatDate(r.date)}</span>
+                                <span class="meta-tag">${r.ticket_type === 'all' ? '💎 All' : '🎫 Reg'}</span>
+                                <span class="meta-tag">⏰ ${formatTime(r.after_time)}-${formatTime(r.before_time)}</span>
+                            </div>
+                        </div>
+                        <div class="watcher-actions">
+                            <button class="watcher-delete" 
+                                    onclick="event.stopPropagation(); deleteRule('${r.id}')" 
+                                    title="Delete Watcher"
+                                    aria-label="Delete watcher for ${r.route}">
+                                🚫
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // ============================================
+        // TICKET RENDERING
+        // ============================================
+        function renderTickets() {
+            const container = document.getElementById('ticketsBody');
+            const titleElement = document.getElementById('ticketsTitle');
+            if (!container) return;
+
+            let matches = globalData.matches;
+            if (selectedRuleId) {
+                matches = matches.filter(m => m.rule_id === selectedRuleId);
+                const rule = globalData.rules.find(r => r.id === selectedRuleId);
+                if (rule && titleElement) {
+                    titleElement.innerHTML = `<span aria-hidden="true">🎫</span><span>Found Tickets for ${escapeHtml(rule.route)} (${formatDate(rule.date)})</span>`;
+                }
+            } else {
+                if (titleElement) {
+                    titleElement.innerHTML = `<span aria-hidden="true">🎫</span><span>Found Tickets (All)</span>`;
+                }
+            }
+
+            if (matches.length === 0) {
+                const message = selectedRuleId 
+                    ? 'No tickets found for this watcher yet.' 
+                    : 'Waiting for tickets...';
+                container.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-text">${message}</div>
+                            </div>
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            container.innerHTML = matches.map(m => {
+                // Build seat badges with proper colors matching screenshot
+                const seatBadges = [];
+                if (m.economy_seats > 0) {
+                    seatBadges.push(`<span class="seat-badge">${m.economy_seats}</span>`);
+                }
+                if (m.business_seats > 0) {
+                    seatBadges.push(`<span class="seat-badge business">${m.business_seats}</span>`);
+                }
+                if (m.loca_seats > 0) {
+                    seatBadges.push(`<span class="seat-badge loca">${m.loca_seats}</span>`);
+                }
+                const seatInfo = seatBadges.length > 0 
+                    ? `<div class="seat-badge-group">${seatBadges.join('')}</div>` 
+                    : `<span class="seat-badge">${m.seats || 0}</span>`;
+
+                // Fix price: Show price for available seats (prioritize economy > business > loca)
+                // This matches the seat availability, not just the minimum price
+                let priceInfo = 0;
+                let priceDisplay = '';
+                
+                if (m.economy_seats > 0 && m.economy_price > 0) {
+                    priceInfo = m.economy_price;
+                    priceDisplay = `${priceInfo.toFixed(2)} TL`;
+                } else if (m.business_seats > 0 && m.business_price > 0) {
+                    priceInfo = m.business_price;
+                    priceDisplay = `${priceInfo.toFixed(2)} TL`;
+                } else if (m.loca_seats > 0 && m.loca_price > 0) {
+                    priceInfo = m.loca_price;
+                    priceDisplay = `${priceInfo.toFixed(2)} TL`;
+                } else if (m.price > 0) {
+                    // Fallback to legacy price field
+                    priceInfo = m.price;
+                    priceDisplay = `${priceInfo.toFixed(2)} TL`;
+                } else {
+                    priceDisplay = 'N/A';
+                }
+
+                // Format date properly
+                const displayDate = formatDate(m.date);
+                
+                // Format departure and arrival times
+                const displayDepTime = formatTime(m.time);
+                const displayArrTime = formatTime(m.arr_time || '23:59');
+                
+                // Route with train badge
+                const trainName = escapeHtml(m.train || 'TCDD Train');
+                const routeText = escapeHtml(m.route);
+
+                return `
+                <tr>
+                    <td>
+                        <div class="time-display">
+                            <span class="time-primary">${displayDate}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="route-pill">
+                            <span class="train-badge">${trainName}</span>
+                            <span class="route-arrow" aria-hidden="true">→</span>
+                            <span>${routeText}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="time-display">
+                            <span class="time-primary">${displayDepTime}</span>
+                            <span class="time-separator" aria-hidden="true">→</span>
+                            <span class="time-secondary">${displayArrTime}</span>
+                        </div>
+                    </td>
+                    <td>${seatInfo}</td>
+                    <td><span class="price-text">${priceDisplay}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-relook" 
+                                    onclick="resetAlert('${m.rule_id}', '${m.date}', '${m.time}')" 
+                                    title="Re-notify for this train"
+                                    aria-label="Re-enable notifications for this train">
+                                🔔
+                            </button>
+                            <a href="https://ebilet.tcddtasimacilik.gov.tr/" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               class="btn-buy"
+                               aria-label="Buy ticket for ${routeText}">
+                                Buy →
+                            </a>
+                        </div>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ============================================
+        // API CALLS
+        // ============================================
+        async function updateDashboard() {
+            if (isPolling) return;
+            isPolling = true;
+
+            try {
+                const res = await fetch('/api/stats');
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+
+                globalData = data;
+                renderWatchers();
+                renderTickets();
+
+            } catch (err) {
+                console.error("Poll error", err);
+                // Don't show error toast on every failed poll to avoid spam
+            } finally {
+                isPolling = false;
+            }
+        }
+
+        async function deleteRule(ruleId) {
+            if (!confirm("Stop watching this trip?")) return;
+
+            try {
+                const res = await fetch(`/rules/${ruleId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showToast('Watcher deleted successfully', 'success');
+                    await updateDashboard();
+                } else {
+                    const errorData = await res.json().catch(() => ({}));
+                    showToast(errorData.error || 'Failed to delete watcher', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Error deleting watcher', 'error');
+            }
+        }
+
+        async function clearHistory() {
+            if (!confirm("Clear all ticket history? This cannot be undone.")) return;
+
+            try {
+                const res = await fetch('/api/history', { method: 'DELETE' });
+                if (res.ok) {
+                    showToast('History cleared successfully', 'success');
+                    await updateDashboard();
+                } else {
+                    const errorData = await res.json().catch(() => ({}));
+                    showToast(errorData.error || 'Failed to clear history', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Error clearing history', 'error');
+            }
+        }
+
+        async function resetAlert(ruleId, date, depTime) {
+            try {
+                const res = await fetch('/api/reset-alert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rule_id: ruleId, date: date, dep_time: depTime })
+                });
+                if (res.ok) {
+                    showToast('You will be notified again for this train!', 'success');
+                } else {
+                    const errorData = await res.json().catch(() => ({}));
+                    showToast(errorData.error || 'Failed to reset alert', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Error resetting alert', 'error');
+            }
+        }
+
+        // ============================================
+        // SETTINGS MODAL
+        // ============================================
+        function openSettings() {
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                modal.classList.add('active');
+                modal.setAttribute('aria-hidden', 'false');
+                fetch('/api/settings/config')
+                    .then(r => r.json())
+                    .then(d => {
+                        const intervalInput = document.getElementById('settingInterval');
+                        if (intervalInput && d.check_interval_min) {
+                            intervalInput.value = d.check_interval_min;
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Failed to load settings', err);
+                    });
+            }
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        function saveSettings() {
+            const intervalInput = document.getElementById('settingInterval');
+            if (!intervalInput) return;
+
+            const val = parseInt(intervalInput.value);
+            if (val < 1 || val > 10) {
+                showToast('Interval must be between 1 and 10 minutes', 'error');
+                return;
+            }
+
+            fetch('/api/settings/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ check_interval_min: val })
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (d.status === 'updated') {
+                    showToast('Settings saved!', 'success');
+                    closeSettings();
+                } else {
+                    showToast('Error: ' + (d.error || JSON.stringify(d)), 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Failed to save settings', err);
+                showToast('Error saving settings', 'error');
+            });
+        }
+
+        // Close modal on outside click
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('settingsModal');
+            if (modal && e.target === modal) {
+                closeSettings();
+            }
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeSettings();
+            }
+        });
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function initialize() {
+            initializeDateInput();
+            initializeQuickDateButtons();
+            initializePasteButton();
+            initializeForm();
+            
+            // Initial data load
+            updateDashboard();
+            
+            // Set up polling (every 5 seconds)
+            pollInterval = setInterval(updateDashboard, 5000);
+        }
+
+        // Start when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initialize);
+        } else {
+            initialize();
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+        });
+    </script>
+</body>
+
+</html>

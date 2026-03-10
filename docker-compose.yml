@@ -1,0 +1,32 @@
+services:
+  api:
+    build: .
+    container_name: tcdd-api
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    mem_limit: 256m  # Limit API memory
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    ports:
+      - "8000:8000"
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+      - TZ=Europe/Istanbul
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  worker:
+    build: .
+    container_name: tcdd-worker
+    command: python -m worker.main
+    mem_limit: 512m  # Limit worker memory
+    environment:
+      - CHECK_INTERVAL_MIN=5
+      - TZ=Europe/Istanbul
+
+volumes:
+  data:

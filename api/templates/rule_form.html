@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Rule - TCDD Watcher</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 p-8">
+    <div class="max-w-md mx-auto bg-white shadow rounded-lg p-6">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">Add New Watch Rule</h1>
+        <form action="/rules" method="POST">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">From Station</label>
+                <select name="from_station"
+                    class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    {% for st in stations %}
+                    <option value="{{ st }}" {% if st=='ANKARA GAR' %}selected{% endif %}>{{ st }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">To Station</label>
+                <select name="to_station"
+                    class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    {% for st in stations %}
+                    <option value="{{ st }}" {% if st=='İSTANBUL(SÖĞÜTLÜÇEŞME)' %}selected{% endif %}>{{ st }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Date</label>
+                <input type="date" name="date_start"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    required>
+            </div>
+            <div class="mb-4 grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Depart After</label>
+                    <input type="time" name="after_time" value="00:00"
+                        class="shadow border rounded w-full py-2 px-3 text-gray-700">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Depart Before</label>
+                    <input type="time" name="before_time" value="23:59"
+                        class="shadow border rounded w-full py-2 px-3 text-gray-700">
+                </div>
+            </div>
+            <div class="mb-4 grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Arrive After</label>
+                    <input type="time" name="arrival_after" value="00:00"
+                        class="shadow border rounded w-full py-2 px-3 text-gray-700">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Arrive Before</label>
+                    <input type="time" name="arrival_before" value="23:59"
+                        class="shadow border rounded w-full py-2 px-3 text-gray-700">
+                </div>
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Min Seats</label>
+                <input type="number" name="min_seats" value="1" min="1"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div class="flex items-center justify-between">
+                <button
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                    type="submit">
+                    Create Rule
+                </button>
+                <a href="/" class="inline-block align-baseline font-bold text-sm text-blue-600 hover:text-blue-800">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+    <script>
+        // Set default date to tomorrow
+        const dateInput = document.querySelector('input[type="date"]');
+        if (dateInput) {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dateInput.valueAsDate = tomorrow;
+        }
+    </script>
+</body>
+
+</html>

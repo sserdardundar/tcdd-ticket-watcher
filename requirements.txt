@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-telegram-bot
+python-dotenv
+google-cloud-firestore
+requests
+pydantic
+pydantic-settings
+jinja2
