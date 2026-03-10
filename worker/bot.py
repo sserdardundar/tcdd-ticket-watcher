@@ -768,7 +768,7 @@ def create_bot_app():
     
     # 1. Settings Handlers
     app.add_handler(CommandHandler("settings", settings_command))
-    app.add_handler(CallbackQueryHandler(settings_callback, pattern="^set_int\|"))
+    app.add_handler(CallbackQueryHandler(settings_callback, pattern=r"^set_int\|"))
 
     # 2. Menu Navigation
     app.add_handler(MessageHandler(filters.Regex("^🎫 Watcher$"), watcher_menu))
