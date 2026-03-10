@@ -3,9 +3,15 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Form, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from telegram import Update
+import logging
+
+from common.config import settings
 
 from common.repository import WatchRulesRepository, TripSnapshotRepository
 from common.utils import STATION_MAP
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="api/templates")
@@ -76,3 +82,25 @@ async def toggle_rule(rule_id: str):
     if rule:
         WatchRulesRepository.update(rule_id, {"enabled": not rule.get("enabled", False)})
     return RedirectResponse(url="/", status_code=303)
+
+@router.post("/webhook/{token}")
+async def telegram_webhook(request: Request, token: str):
+    if token != settings.TELEGRAM_BOT_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid token")
+        
+    secret_token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
+    if settings.TELEGRAM_WEBHOOK_SECRET and secret_token != settings.TELEGRAM_WEBHOOK_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid secret token")
+    
+    bot_app = getattr(request.app.state, "bot_app", None)
+    if not bot_app:
+        return {"status": "bot not configured"}
+        
+    try:
+        data = await request.json()
+        update = Update.de_json(data, bot_app.bot)
+        await bot_app.process_update(update)
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Error processing webhook: {e}", exc_info=True)
+        return {"status": "error"}

@@ -19,6 +19,7 @@ bot_app = create_bot_app()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    app.state.bot_app = bot_app
     if bot_app:
         await bot_app.initialize()
         await bot_app.start()
@@ -372,26 +373,7 @@ async def update_config(conf: ConfigUpdate):
         )
 # --------------------------------
 
-@app.post("/webhook/{token}")
-async def telegram_webhook(request: Request, token: str):
-    if token != settings.TELEGRAM_BOT_TOKEN:
-        raise HTTPException(status_code=403, detail="Invalid token")
-        
-    secret_token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
-    if settings.TELEGRAM_WEBHOOK_SECRET and secret_token != settings.TELEGRAM_WEBHOOK_SECRET:
-        raise HTTPException(status_code=403, detail="Invalid secret token")
-    
-    if not bot_app:
-        return {"status": "bot not configured"}
-        
-    try:
-        data = await request.json()
-        update = Update.de_json(data, bot_app.bot)
-        await bot_app.process_update(update)
-        return {"status": "ok"}
-    except Exception as e:
-        logger.error(f"Error processing webhook: {e}", exc_info=True)
-        return {"status": "error"}
+# Webhook moved to router.py
 
 app.include_router(router)
 
