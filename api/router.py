@@ -83,13 +83,13 @@ async def toggle_rule(rule_id: str):
         WatchRulesRepository.update(rule_id, {"enabled": not rule.get("enabled", False)})
     return RedirectResponse(url="/", status_code=303)
 
-@router.post("/webhook/{token}")
-async def telegram_webhook(request: Request, token: str):
-    if token != settings.TELEGRAM_BOT_TOKEN:
-        raise HTTPException(status_code=403, detail="Invalid token")
-        
-    secret_token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
-    if settings.TELEGRAM_WEBHOOK_SECRET and secret_token != settings.TELEGRAM_WEBHOOK_SECRET:
+@router.post("/telegram/webhook/{secret}")
+async def telegram_webhook(request: Request, secret: str):
+    # According to user: POST /telegram/webhook/{secret}
+    # This secret is our Telegram Webhook Secret, no standard token validation needed here
+    # depending on how they prefer to set it up, but we'll check it against the env var.
+    
+    if settings.TELEGRAM_WEBHOOK_SECRET and secret != settings.TELEGRAM_WEBHOOK_SECRET:
         raise HTTPException(status_code=403, detail="Invalid secret token")
     
     bot_app = getattr(request.app.state, "bot_app", None)

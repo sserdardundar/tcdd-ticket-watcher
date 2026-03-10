@@ -229,7 +229,7 @@ async def auth_middleware(request: Request, call_next):
     public_paths = ["/login", "/health", "/docs", "/openapi.json", "/redoc"]
     
     # Webhook path must be public for Telegram to reach it
-    if request.url.path in public_paths or request.url.path.startswith("/webhook/"):
+    if request.url.path in public_paths or request.url.path.startswith("/telegram/webhook/"):
         return await call_next(request)
     
     # Check for authentication token

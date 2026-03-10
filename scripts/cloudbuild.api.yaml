@@ -1,25 +1,13 @@
 steps:
-  # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/tcdd-api', '-f', 'Dockerfile.api', '.']
-  
-  # Push the container image to Container Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/tcdd-api']
-    
-  # Deploy container image to Cloud Run Service
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
     args:
-      - 'run'
-      - 'deploy'
-      - 'tcdd-api'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/tcdd-api'
-      - '--region'
-      - 'europe-west1'
-      - '--allow-unauthenticated'
-      - '--set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
-      - '--set-secrets=TELEGRAM_BOT_TOKEN=telegram-token:latest,ADMIN_TOKEN=admin-token:latest,TELEGRAM_WEBHOOK_SECRET=telegram-webhook-secret:latest'
+      [
+        'build',
+        '-f',
+        'Dockerfile.api',
+        '-t',
+        '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/tcdd-api:latest',
+        '.'
+      ]
 images:
-  - 'gcr.io/$PROJECT_ID/tcdd-api'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/tcdd-api:latest'

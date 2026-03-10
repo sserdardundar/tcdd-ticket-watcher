@@ -146,39 +146,43 @@ async def new_rule_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def list_rules(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    with Session(engine) as session:
-        rules = session.exec(select(WatchRule).where(WatchRule.enabled == True, WatchRule.chat_id == chat_id)).all()
-        if not rules:
-            await update.message.reply_text(
-                "📭 **No active watchers**\n\n"
-                "Tap *🎫 New Watcher* to create one!",
-                parse_mode="Markdown",
-                reply_markup=get_main_menu_keyboard()
-            )
-            return ConversationHandler.END
-        
+    rules = WatchRulesRepository.get_by_chat_id(chat_id)
+    # Filter only enabled ones manually just in case, though get_by_chat_id returns all for that user
+    rules = [r for r in rules if r.get("enabled", False)]
+    
+    if not rules:
         await update.message.reply_text(
-            f"📋 **Your Watchers** ({len(rules)} active)\n"
-            "━━━━━━━━━━━━━━━━━",
-            parse_mode="Markdown", 
+            "📭 **No active watchers**\n\n"
+            "Tap *🎫 New Watcher* to create one!",
+            parse_mode="Markdown",
             reply_markup=get_main_menu_keyboard()
         )
-        
-        for r in rules:
-            ticket_type_label = "💎 All Classes" if r.ticket_type == "all" else "🎫 Ekonomi Only"
+        return ConversationHandler.END
+    
+    await update.message.reply_text(
+        f"📋 **Your Watchers** ({len(rules)} active)\n"
+        "━━━━━━━━━━━━━━━━━",
+        parse_mode="Markdown", 
+        reply_markup=get_main_menu_keyboard()
+    )
+    
+    for r in rules:
+            ticket_type = r.get("ticket_type", "ekonomi")
+            ticket_type_label = "💎 All Classes" if ticket_type == "all" else "🎫 Ekonomi Only"
             info_text = (
                 f"┌─────────────────\n"
-                f"│ 🚄 **{r.from_station}** ➡️ **{r.to_station}**\n"
-                f"│ 📅 {r.date_start}\n"
-                f"│ ⏰ {r.after_time} - {r.before_time}\n"
+                f"│ 🚄 **{r.get('from_station')}** ➡️ **{r.get('to_station')}**\n"
+                f"│ 📅 {r.get('date_start')}\n"
+                f"│ ⏰ {r.get('after_time')} - {r.get('before_time')}\n"
                 f"│ {ticket_type_label}\n"
                 f"└─────────────────"
             )
             # Inline buttons for actions
+            rule_id = r.get("id")
             kb = InlineKeyboardMarkup([
                 [
-                    InlineKeyboardButton("🗑 Delete", callback_data=f"delete_rule|{r.id}"),
-                    InlineKeyboardButton("⏸ Pause" if r.enabled else "▶️ Resume", callback_data=f"toggle_rule|{r.id}")
+                    InlineKeyboardButton("🗑 Delete", callback_data=f"delete_rule|{rule_id}"),
+                    InlineKeyboardButton("⏸ Pause" if r.get("enabled") else "▶️ Resume", callback_data=f"toggle_rule|{rule_id}")
                 ]
             ])
             await update.message.reply_text(info_text, parse_mode="Markdown", reply_markup=kb)
@@ -187,37 +191,36 @@ async def list_rules(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
-    with Session(engine) as session:
-        # Get last 5 notifications
-        history = session.exec(
-            select(NotificationHistory)
-            .where(NotificationHistory.chat_id == chat_id)
-            .order_by(desc(NotificationHistory.created_at))
-            .limit(5)
-        ).all()
-        
-        if not history:
-             await update.message.reply_text("📭 No alert history yet.", reply_markup=get_main_menu_keyboard())
-             return ConversationHandler.END
+    history = NotificationHistoryRepository.get_recent_by_chat_id(chat_id, limit=5)
+    
+    if not history:
+         await update.message.reply_text("📭 No alert history yet.", reply_markup=get_main_menu_keyboard())
+         return ConversationHandler.END
 
-        msg = "📜 **Recent Alerts**\n"
-        for h in history:
-            time_str = h.created_at.strftime("%d.%m %H:%M")
-            lines = h.message.split("\n")
+    msg = "📜 **Recent Alerts**\n"
+    for h in history:
+        created_at = h.get("created_at")
+        if hasattr(created_at, "strftime"):
+             time_str = created_at.strftime("%d.%m %H:%M")
+        else:
+             time_str = str(created_at)
+             
+        message = h.get("message", "")
+        lines = message.split("\n")
             
-            # Simple parsing of standard alert format
-            route = "Unknown Route"
-            trip_info = "?"
-            
-            for line in lines:
-                if "🚄" in line:
-                    route = line.strip().replace("`", "")
-                if "📅" in line:
-                    trip_info = line.strip().replace("📅", "").replace("⏰", "").strip()
-            
-            msg += f"\n⏰ *{time_str}*\n{route}\n📅 {trip_info}\n──────────────────"
-            
-        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=get_main_menu_keyboard())
+        # Simple parsing of standard alert format
+        route = "Unknown Route"
+        trip_info = "?"
+        
+        for line in lines:
+            if "🚄" in line:
+                route = line.strip().replace("`", "")
+            if "📅" in line:
+                trip_info = line.strip().replace("📅", "").replace("⏰", "").strip()
+        
+        msg += f"\n⏰ *{time_str}*\n{route}\n📅 {trip_info}\n──────────────────"
+        
+    await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=get_main_menu_keyboard())
     return ConversationHandler.END
 
 async def clear_history_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
