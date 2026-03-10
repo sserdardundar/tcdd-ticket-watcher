@@ -20,8 +20,10 @@ SCHEDULER_NAME="tcdd-worker-trigger"
 # Secrets (These must be created in Secret Manager beforehand)
 # gcloud secrets create telegram-token --data-file=...
 # gcloud secrets create admin-token --data-file=...
+# gcloud secrets create telegram-webhook-secret --data-file=...
 SECRET_TELEGRAM="telegram-token:latest"
 SECRET_ADMIN="admin-token:latest"
+SECRET_WEBHOOK="telegram-webhook-secret:latest"
 
 echo "1. Building images via Google Cloud Build..."
 gcloud builds submit --tag ${IMAGE_API} -f Dockerfile.api .
@@ -34,7 +36,7 @@ gcloud run deploy ${SERVICE_NAME} \
   --project ${PROJECT_ID} \
   --allow-unauthenticated \
   --set-env-vars=GOOGLE_CLOUD_PROJECT=${PROJECT_ID} \
-  --set-secrets=TELEGRAM_BOT_TOKEN=${SECRET_TELEGRAM},ADMIN_TOKEN=${SECRET_ADMIN}
+  --set-secrets=TELEGRAM_BOT_TOKEN=${SECRET_TELEGRAM},ADMIN_TOKEN=${SECRET_ADMIN},TELEGRAM_WEBHOOK_SECRET=${SECRET_WEBHOOK}
 
 echo "3. Deploying Worker to Cloud Run Jobs..."
 gcloud run jobs create ${JOB_NAME} \
@@ -43,7 +45,7 @@ gcloud run jobs create ${JOB_NAME} \
   --project ${PROJECT_ID} \
   --max-retries 0 \
   --set-env-vars=GOOGLE_CLOUD_PROJECT=${PROJECT_ID} \
-  --set-secrets=TELEGRAM_BOT_TOKEN=${SECRET_TELEGRAM},ADMIN_TOKEN=${SECRET_ADMIN}
+  --set-secrets=TELEGRAM_BOT_TOKEN=${SECRET_TELEGRAM},ADMIN_TOKEN=${SECRET_ADMIN},TELEGRAM_WEBHOOK_SECRET=${SECRET_WEBHOOK}
 
 echo "4. Creating Cloud Scheduler to trigger Worker every 5 minutes..."
 # Retrieve the service account used by the job (default compute engine or custom)
@@ -58,4 +60,6 @@ gcloud scheduler jobs create http ${SCHEDULER_NAME} \
   --oauth-service-account-email ${SERVICE_ACCOUNT}
 
 echo "Deployment Instructions Generated. Be sure to configure the Webhook URL using:"
-echo "curl -X POST https://api.telegram.org/bot<TOKEN>/setWebhook?url=<CLOUD_RUN_URL>/webhook/<TOKEN>"
+echo "curl -X POST https://api.telegram.org/bot<TOKEN>/setWebhook \
+  -F \"url=<CLOUD_RUN_URL>/webhook/<TOKEN>\" \
+  -F \"secret_token=<TELEGRAM_WEBHOOK_SECRET>\""

@@ -9,10 +9,25 @@ from common.repository import WatchRulesRepository, TripSnapshotRepository, Noti
 from common.utils import POPULAR_STATIONS
 from datetime import datetime
 import logging
+from contextlib import asynccontextmanager
+from telegram import Update
+from worker.bot import create_bot_app
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="TCDD Ticket Watcher", version="1.0.0")
+bot_app = create_bot_app()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if bot_app:
+        await bot_app.initialize()
+        await bot_app.start()
+    yield
+    if bot_app:
+        await bot_app.stop()
+        await bot_app.shutdown()
+
+app = FastAPI(title="TCDD Ticket Watcher", version="1.0.0", lifespan=lifespan)
 templates = Jinja2Templates(directory="api/templates")
 
 # Add CORS middleware for better API compatibility
@@ -92,7 +107,44 @@ async def dashboard(request: Request):
 async def api_stats(request: Request):
     """Get current stats: active watchers and found tickets."""
     try:
-                })
+        # Fetch active rules
+        rules = WatchRulesRepository.get_all_active()
+        
+        rules_data = [{
+            "id": str(r.get("id")),
+            "route": f"{r.get('from_station')} -> {r.get('to_station')}",
+            "date": r.get("date_start"),
+            "ticket_type": r.get("ticket_type"),
+            "chat_id": r.get("chat_id"),
+            "after_time": r.get("after_time"),
+            "before_time": r.get("before_time"),
+            "enabled": r.get("enabled")
+        } for r in rules]
+
+        # Fetch recent snapshots
+        snapshots = TripSnapshotRepository.get_recent(limit=100)
+        
+        matches_data = []
+        for snap in snapshots:
+            rule = WatchRulesRepository.get(snap.get("rule_id", ""))
+            matches_data.append({
+                "id": snap.get("id"),
+                "rule_id": snap.get("rule_id"),
+                "date": snap.get("trip_date"),
+                "route": f"{rule.get('from_station')} -> {rule.get('to_station')}" if rule else "Unknown",
+                "time": snap.get("dep_time"),
+                "arr_time": snap.get('arr_time', '23:59'),
+                "train": snap.get("train_name", "TCDD Train"),
+                "seats": snap.get("seats_available", 0),
+                "price": float(snap.get("price", 0)),
+                "economy_seats": snap.get("economy_seats", 0),
+                "economy_price": float(snap.get("economy_price", 0)),
+                "business_seats": snap.get("business_seats", 0),
+                "business_price": float(snap.get("business_price", 0)),
+                "loca_seats": snap.get("loca_seats", 0),
+                "loca_price": float(snap.get("loca_price", 0)),
+                "seen": str(snap.get("last_seen_at", ""))
+            })
                 
         return JSONResponse({
             "rules": rules_data,
@@ -139,7 +191,7 @@ async def create_rule(
     if chat_id <= 0:
         raise HTTPException(status_code=400, detail="Valid Telegram Chat ID is required")
     
-    # Normalize Date: Browser sends YYYY-MM-DD, Scraper needs DD.MM.YYYY
+    # Normalize Date: Browser sends YYYY-MM-DD, API needs DD.MM.YYYY
     final_date = date
     if "-" in date:
         try:
@@ -175,7 +227,8 @@ async def auth_middleware(request: Request, call_next):
     # Public paths that don't require authentication
     public_paths = ["/login", "/health", "/docs", "/openapi.json", "/redoc"]
     
-    if request.url.path in public_paths:
+    # Webhook path must be public for Telegram to reach it
+    if request.url.path in public_paths or request.url.path.startswith("/webhook/"):
         return await call_next(request)
     
     # Check for authentication token
@@ -242,11 +295,10 @@ async def delete_rule(rule_id: str, request: Request):
 @app.delete("/api/history", response_class=JSONResponse)
 async def clear_history(request: Request):
     """Clear all ticket history and reset alert keys so trains can be re-notified"""
-    keys_deleted = 0
+    TripSnapshotRepository.delete_all()
+    NotificationHistoryRepository.delete_all()
     AlertCacheRepository.clear_all()
-    # History clearing could be a huge operation in proper DB, here we'll let it be for now since it's just local.
-    # We would need proper queries to delete snapshots, notification_history etc. 
-    return {"success": True, "message": f"History cleared. Alerts reset."}
+    return {"success": True, "message": "History cleared. Alerts reset."}
 
 @app.post("/api/reset-alert", response_class=JSONResponse)
 async def reset_alert(request: Request):
@@ -319,6 +371,27 @@ async def update_config(conf: ConfigUpdate):
             status_code=500
         )
 # --------------------------------
+
+@app.post("/webhook/{token}")
+async def telegram_webhook(request: Request, token: str):
+    if token != settings.TELEGRAM_BOT_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid token")
+        
+    secret_token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
+    if settings.TELEGRAM_WEBHOOK_SECRET and secret_token != settings.TELEGRAM_WEBHOOK_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid secret token")
+    
+    if not bot_app:
+        return {"status": "bot not configured"}
+        
+    try:
+        data = await request.json()
+        update = Update.de_json(data, bot_app.bot)
+        await bot_app.process_update(update)
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Error processing webhook: {e}", exc_info=True)
+        return {"status": "error"}
 
 app.include_router(router)
 

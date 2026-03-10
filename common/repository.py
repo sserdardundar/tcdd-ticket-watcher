@@ -1,7 +1,7 @@
 import os
 import uuid
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from google.cloud import firestore
 
 from common.config import settings
@@ -179,7 +179,7 @@ class AlertCacheRepository:
 
     @staticmethod
     def set(key: str, last_seats: str, last_price: str, ttl_hours: int = 6):
-        expires_at = datetime.now(timezone.utc) + __import__('datetime').timedelta(hours=ttl_hours)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=ttl_hours)
         data = {
             "key": key,
             "last_seats": last_seats,

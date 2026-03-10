@@ -1,32 +1,34 @@
 services:
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.api
     container_name: tcdd-api
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
-    mem_limit: 256m  # Limit API memory
+    mem_limit: 256m
     volumes:
       - .:/app
     ports:
       - "8000:8000"
-    ports:
-      - "8000:8000"
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
       - ADMIN_TOKEN=${ADMIN_TOKEN}
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-tcdd-ticket-watcher}
       - TZ=Europe/Istanbul
-    depends_on:
-      - redis
     restart: unless-stopped
 
   worker:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
     container_name: tcdd-worker
     command: python -m worker.main
-    mem_limit: 512m  # Limit worker memory
+    mem_limit: 512m
     environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-tcdd-ticket-watcher}
       - CHECK_INTERVAL_MIN=5
       - TZ=Europe/Istanbul
-
-volumes:
-  data:
