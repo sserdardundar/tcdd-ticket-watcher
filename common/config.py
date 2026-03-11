@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str
     TELEGRAM_WEBHOOK_SECRET: str = ""
     TELEGRAM_CHAT_ID: str = ""
-    ADMIN_TOKEN: str
+    ADMIN_TOKEN: str = ""
     GCP_PROJECT_ID: str = os.getenv("GOOGLE_CLOUD_PROJECT", "tcdd-ticket-watcher")
     
     # Defaults
