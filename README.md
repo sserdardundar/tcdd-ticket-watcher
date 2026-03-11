@@ -176,6 +176,18 @@ Shows all discovered tickets with:
 | `Worker Job` | Background job that spins up, checks tickets, and safely exits |
 | `Firestore` | Native mode NoSQL datastore for persistence and dedup caching |
 
+### Docker Build Strategy
+
+The project uses a **base image pattern** to avoid redundant work during cloud builds:
+
+| Dockerfile | Purpose |
+|------------|---------|
+| `Dockerfile.base` | Installs Python deps and copies all source code (built once) |
+| `Dockerfile.api` | `FROM` base image, adds only the Uvicorn CMD |
+| `Dockerfile.worker` | `FROM` base image, adds only the worker CMD |
+
+This means `pip install` and source copy happen only **once** per deploy, saving significant Cloud Build time.
+
 ### Data Persistence (Firestore)
 
 - `watch_rules` - User-defined ticket watcher configs

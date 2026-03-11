@@ -10,6 +10,7 @@ PROJECT_ID="your-gcp-project-id"
 REGION="europe-west1"
 REPO_NAME="tcdd-ticket-watcher"
 
+IMAGE_BASE="eu.gcr.io/${PROJECT_ID}/${REPO_NAME}-base:latest"
 IMAGE_API="eu.gcr.io/${PROJECT_ID}/${REPO_NAME}-api:latest"
 IMAGE_WORKER="eu.gcr.io/${PROJECT_ID}/${REPO_NAME}-worker:latest"
 
@@ -25,11 +26,16 @@ SECRET_TELEGRAM="telegram-token:latest"
 SECRET_ADMIN="admin-token:latest"
 SECRET_WEBHOOK="telegram-webhook-secret:latest"
 
-echo "1. Building images via Google Cloud Build..."
-gcloud builds submit --tag ${IMAGE_API} -f Dockerfile.api .
-gcloud builds submit --tag ${IMAGE_WORKER} -f Dockerfile.worker .
+echo "1. Building base image via Cloud Build..."
+gcloud builds submit --tag ${IMAGE_BASE} -f Dockerfile.base .
 
-echo "2. Deploying API to Cloud Run Service..."
+echo "2. Building API image (from base)..."
+gcloud builds submit --tag ${IMAGE_API} -f Dockerfile.api --build-arg BASE_IMAGE=${IMAGE_BASE} .
+
+echo "3. Building Worker image (from base)..."
+gcloud builds submit --tag ${IMAGE_WORKER} -f Dockerfile.worker --build-arg BASE_IMAGE=${IMAGE_BASE} .
+
+echo "4. Deploying API to Cloud Run Service..."
 gcloud run deploy ${SERVICE_NAME} \
   --image ${IMAGE_API} \
   --region ${REGION} \
@@ -38,7 +44,7 @@ gcloud run deploy ${SERVICE_NAME} \
   --set-env-vars=GOOGLE_CLOUD_PROJECT=${PROJECT_ID} \
   --set-secrets=TELEGRAM_BOT_TOKEN=${SECRET_TELEGRAM},ADMIN_TOKEN=${SECRET_ADMIN},TELEGRAM_WEBHOOK_SECRET=${SECRET_WEBHOOK}
 
-echo "3. Deploying Worker to Cloud Run Jobs..."
+echo "5. Deploying Worker to Cloud Run Jobs..."
 gcloud run jobs create ${JOB_NAME} \
   --image ${IMAGE_WORKER} \
   --region ${REGION} \
@@ -47,8 +53,7 @@ gcloud run jobs create ${JOB_NAME} \
   --set-env-vars=GOOGLE_CLOUD_PROJECT=${PROJECT_ID} \
   --set-secrets=TELEGRAM_BOT_TOKEN=${SECRET_TELEGRAM},ADMIN_TOKEN=${SECRET_ADMIN},TELEGRAM_WEBHOOK_SECRET=${SECRET_WEBHOOK}
 
-echo "4. Creating Cloud Scheduler to trigger Worker every 5 minutes..."
-# Retrieve the service account used by the job (default compute engine or custom)
+echo "6. Creating Cloud Scheduler to trigger Worker every 5 minutes..."
 # Replace with the actual service account email
 SERVICE_ACCOUNT="your-compute-sa@developer.gserviceaccount.com"
 
@@ -59,7 +64,6 @@ gcloud scheduler jobs create http ${SCHEDULER_NAME} \
   --http-method POST \
   --oauth-service-account-email ${SERVICE_ACCOUNT}
 
-echo "Deployment Instructions Generated. Be sure to configure the Webhook URL using:"
+echo "Deployment complete. Set the Telegram Webhook URL using:"
 echo "curl -X POST https://api.telegram.org/bot<TOKEN>/setWebhook \
-  -F \"url=<CLOUD_RUN_URL>/webhook/<TOKEN>\" \
-  -F \"secret_token=<TELEGRAM_WEBHOOK_SECRET>\""
+  -F \"url=<CLOUD_RUN_URL>/telegram/webhook/<TELEGRAM_WEBHOOK_SECRET>\""
