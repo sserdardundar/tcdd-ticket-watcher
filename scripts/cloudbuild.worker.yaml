@@ -3,11 +3,13 @@ steps:
     args:
       [
         'build',
+        '--build-arg',
+        'BASE_IMAGE=${_BASE_IMAGE}',
         '-f',
         'Dockerfile.worker',
         '-t',
-        '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/tcdd-worker:latest',
+        '${_WORKER_IMAGE}',
         '.'
       ]
 images:
-  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/tcdd-worker:latest'
+  - '${_WORKER_IMAGE}'

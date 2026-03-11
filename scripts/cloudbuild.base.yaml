@@ -3,13 +3,11 @@ steps:
     args:
       [
         'build',
-        '--build-arg',
-        'BASE_IMAGE=${_BASE_IMAGE}',
         '-f',
-        'Dockerfile.api',
+        'Dockerfile.base',
         '-t',
-        '${_API_IMAGE}',
+        '${_BASE_IMAGE}',
         '.'
       ]
 images:
-  - '${_API_IMAGE}'
+  - '${_BASE_IMAGE}'
