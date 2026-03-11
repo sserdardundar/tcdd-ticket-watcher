@@ -82,7 +82,7 @@ class TCDDHttpClient:
                 "binisIstasyonu_isHaritaGosterimi": False,
                 "inisIstasyonu_isHaritaGosterimi": False,
                 "seyahatTuru": 1, 
-                "gidisTarih": f"{formatted_date} 00:00:00 AM",
+                "gidisTarih": f"{formatted_date} 12:00:00 AM",
                 "bolgeselGelsin": False,
                 "islemTipi": 0,
                 "yolcuSayisi": 1,
@@ -91,14 +91,28 @@ class TCDDHttpClient:
         }
         
         logger.info(f"Querying HTTP API for {from_station} -> {to_station} on {formatted_date}")
-        
+        if not from_id or not to_id:
+            raise ValueError(
+                f"Station ID lookup failed: from_station={from_station}, to_station={to_station}, "
+                f"from_id={from_id}, to_id={to_id}"
+            )
         try:
-            response = requests.post(self.sefer_url, json=body, headers=self.headers, timeout=15, verify=False)
+            response = requests.post(
+                self.sefer_url,
+                json=body,
+                headers=self.headers,
+                timeout=15,
+                verify=False
+            )
             response.raise_for_status()
             data = response.json()
         except Exception as e:
-            logger.error(f"Request failed: {e}")
-            return []
+            status_code = getattr(response, "status_code", None) if "response" in locals() else None
+            response_text = getattr(response, "text", "") if "response" in locals() else ""
+            logger.error(
+                f"Request failed: {e} | status_code={status_code} | body={response_text[:1000]}"
+            )
+            raise
             
         parsed_trips = []
         if data.get('cevapBilgileri', {}).get('cevapKodu') == '000':
