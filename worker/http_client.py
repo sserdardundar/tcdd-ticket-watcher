@@ -3,6 +3,7 @@ import requests
 import datetime
 import urllib3
 from typing import List, Dict
+from common.utils import STATION_MAP, normalize_station
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = logging.getLogger(__name__)
@@ -23,7 +24,6 @@ class TCDDHttpClient:
         self.vagon_url = "https://api-yebsp.tcddtasimacilik.gov.tr/vagon/vagonHaritasindanYerSecimi"
         
         # Load standard station map from common util to translate names to IDs
-        from common.utils import STATION_MAP, normalize_station
         import json
         
         self.station_map = STATION_MAP
