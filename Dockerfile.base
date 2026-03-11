@@ -2,6 +2,14 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Install tzdata and set timezone to Turkey (Europe/Istanbul, UTC+3)
+RUN apt-get update && apt-get install -y --no-install-recommends tzdata && \
+    ln -snf /usr/share/zoneinfo/Europe/Istanbul /etc/localtime && \
+    echo "Europe/Istanbul" > /etc/timezone && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV TZ=Europe/Istanbul
+
 # Install dependencies needed
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

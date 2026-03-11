@@ -2,16 +2,28 @@ import asyncio
 import logging
 import sys
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from common.config import settings
 from common.repository import WatchRulesRepository, TripSnapshotRepository, NotificationHistoryRepository, AlertCacheRepository
 from common.notifications import send_telegram
 from worker.http_client import TCDDHttpClient
 
-# Logging Setup
+# Logging Setup — use Europe/Istanbul local time for log timestamps
+TZ_ISTANBUL = ZoneInfo("Europe/Istanbul")
+
+class IstanbulFormatter(logging.Formatter):
+    """Logging formatter that displays timestamps in Europe/Istanbul time."""
+    def converter(self, timestamp):
+        dt = datetime.fromtimestamp(timestamp, tz=TZ_ISTANBUL)
+        return dt.timetuple()
+
+_handler = logging.StreamHandler()
+_handler.setFormatter(IstanbulFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    level=logging.INFO,
+    handlers=[_handler]
 )
 logger = logging.getLogger(__name__)
 
