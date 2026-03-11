@@ -271,6 +271,130 @@ async def logout():
     resp.delete_cookie("access_token")
     return resp
 
+@app.get("/tcdd-auth", response_class=HTMLResponse)
+async def tcdd_auth_page(request: Request):
+    try:
+        from common.repository import AppConfigRepository
+        auth, user_auth = AppConfigRepository.get_tcdd_jwts()
+    except Exception:
+        auth = settings.TCDD_JWT_AUTH
+        user_auth = settings.TCDD_JWT_USER_AUTH
+        
+    return templates.TemplateResponse("tcdd_login.html", {
+        "request": request, 
+        "auth": auth,
+        "user_auth": user_auth,
+        "error": None,
+        "success": None
+    })
+
+@app.post("/tcdd-auth/login", response_class=HTMLResponse)
+async def tcdd_auth_login(request: Request, email: str = Form(...), password: str = Form(...)):
+    import requests
+    import os
+    
+    # Best-effort attempt to login via API
+    url = "https://ebilet.tcddtasimacilik.gov.tr/auth/realms/master/protocol/openid-connect/token"
+    # Fallback urls to try
+    urls = [
+        "https://web-api-prod-ytp.tcddtasimacilik.gov.tr/auth/realms/master/protocol/openid-connect/token",
+        "https://api-yebsp.tcddtasimacilik.gov.tr/auth/realms/master/protocol/openid-connect/token"
+    ]
+    
+    data = {
+        "client_id": "tms",
+        "grant_type": "password",
+        "username": email,
+        "password": password
+    }
+    
+    success_text = None
+    error_text = "Login attempts blocked by TCDD WAF/Proxy. Please use manual token entry below."
+    
+    try:
+        # We try the standard Keycloak endpoint
+        res = requests.post("https://ytp-prod-master1.tcddtasimacilik.gov.tr:8080/realms/master/protocol/openid-connect/token", 
+                            data=data, timeout=5, verify=False)
+        if res.status_code == 200:
+            tokens = res.json()
+            user_auth = f"Bearer {tokens.get('access_token')}"
+            
+            # Fetch a guest token
+            res_guest = requests.post("https://ytp-prod-master1.tcddtasimacilik.gov.tr:8080/realms/master/protocol/openid-connect/token", 
+                            data={"client_id": "tms", "grant_type": "client_credentials"}, timeout=5, verify=False)
+            if res_guest.status_code == 200:
+                settings.TCDD_JWT_AUTH = f"Bearer {res_guest.json().get('access_token')}"
+                
+            settings.TCDD_JWT_USER_AUTH = user_auth
+            
+            # Sync to Firestore!
+            try:
+                from common.repository import AppConfigRepository
+                AppConfigRepository.set_tcdd_jwts(settings.TCDD_JWT_AUTH, settings.TCDD_JWT_USER_AUTH)
+            except Exception as e:
+                logger.error(f"Failed to sync programmatic tokens to Firestore: {e}")
+                
+            success_text = "Successfully authenticated!"
+            error_text = None
+    except Exception as e:
+        logger.warning(f"Keycloak login failed: {e}")
+        
+    return templates.TemplateResponse("tcdd_login.html", {
+        "request": request, 
+        "auth": settings.TCDD_JWT_AUTH,
+        "user_auth": settings.TCDD_JWT_USER_AUTH,
+        "error": error_text,
+        "success": success_text
+    })
+
+@app.post("/tcdd-auth", response_class=RedirectResponse)
+async def save_tcdd_auth(request: Request, auth: str = Form(""), user_auth: str = Form("")):
+    import os
+    # Update settings
+    settings.TCDD_JWT_AUTH = auth
+    settings.TCDD_JWT_USER_AUTH = user_auth
+    os.environ["TCDD_JWT_AUTH"] = auth
+    os.environ["TCDD_JWT_USER_AUTH"] = user_auth
+    
+    # Save to Firestore for Cloud Run Workers
+    try:
+        from common.repository import AppConfigRepository
+        AppConfigRepository.set_tcdd_jwts(auth, user_auth)
+    except Exception as e:
+        logger.error(f"Failed to sync manual tokens to Firestore: {e}")
+    
+    # Update .env file
+    env_path = ".env"
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r") as f:
+                lines = f.readlines()
+                
+            auth_found = False
+            user_auth_found = False
+            
+            for i, line in enumerate(lines):
+                if line.startswith("TCDD_JWT_AUTH="):
+                    lines[i] = f'TCDD_JWT_AUTH="{auth}"\n'
+                    auth_found = True
+                elif line.startswith("TCDD_JWT_USER_AUTH="):
+                    lines[i] = f'TCDD_JWT_USER_AUTH="{user_auth}"\n'
+                    user_auth_found = True
+                    
+            if not auth_found:
+                lines.append(f'\nTCDD_JWT_AUTH="{auth}"\n')
+            if not user_auth_found:
+                lines.append(f'TCDD_JWT_USER_AUTH="{user_auth}"\n')
+                
+            with open(env_path, "w") as f:
+                f.writelines(lines)
+                
+            logger.info("TCDD Auth tokens updated successfully via Web UI.")
+        except Exception as e:
+            logger.error(f"Failed to write TCDD tokens to .env: {e}")
+            
+    return RedirectResponse(url="/", status_code=303)
+
 @app.delete("/rules/{rule_id}", response_class=JSONResponse)
 async def delete_rule(rule_id: str, request: Request):
     """Delete a watcher rule."""

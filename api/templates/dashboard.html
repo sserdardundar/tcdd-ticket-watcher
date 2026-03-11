@@ -66,7 +66,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
+            background:
                 linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(139, 92, 246, 0.05) 50%, rgba(0, 0, 0, 0.8) 100%),
                 radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
                 radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
@@ -135,6 +135,17 @@
             background: rgba(255, 255, 255, 0.05);
         }
 
+        .btn-warning-outline {
+            color: var(--warning-color);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .btn-warning-outline:hover {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fff;
+        }
+
         .btn-logout {
             background: rgba(239, 68, 68, 0.15);
             color: var(--danger-color);
@@ -197,10 +208,13 @@
         }
 
         @keyframes pulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 opacity: 1;
                 box-shadow: 0 0 0 0 var(--success-glow);
             }
+
             50% {
                 opacity: 0.7;
                 box-shadow: 0 0 0 8px transparent;
@@ -953,6 +967,7 @@
             0% {
                 background-position: 200% 0;
             }
+
             100% {
                 background-position: -200% 0;
             }
@@ -1010,6 +1025,7 @@
                 opacity: 0;
                 transform: translateX(100%);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -1021,6 +1037,7 @@
                 opacity: 1;
                 transform: translateX(0);
             }
+
             to {
                 opacity: 0;
                 transform: translateX(100%);
@@ -1150,6 +1167,7 @@
            ACCESSIBILITY
            ============================================ */
         @media (prefers-reduced-motion: reduce) {
+
             *,
             *::before,
             *::after {
@@ -1185,6 +1203,9 @@
                 <a href="javascript:void(0)" onclick="openSettings()" class="nav-link" aria-label="Open settings">
                     ⚙️ Settings
                 </a>
+            </div>
+            <div class="nav-links">
+                <a href="/tcdd-auth" class="nav-link btn-warning-outline">🔑 TCDD Auth Config</a>
                 <a href="/logout" class="nav-link btn-logout" aria-label="Logout">Logout</a>
             </div>
         </div>
@@ -1218,7 +1239,8 @@
                         <!-- From Station -->
                         <div class="form-group">
                             <label class="form-label" for="from_station">From</label>
-                            <select name="from_station" id="from_station" class="form-control" required aria-required="true">
+                            <select name="from_station" id="from_station" class="form-control" required
+                                aria-required="true">
                                 {% for st in stations %}
                                 <option value="{{ st }}" {% if st=="ANKARA GAR" %}selected{% endif %}>{{ st }}</option>
                                 {% endfor %}
@@ -1228,7 +1250,8 @@
                         <!-- Reverse Button -->
                         <div class="form-group reverse-btn-container">
                             <label class="form-label">&nbsp;</label>
-                            <button type="button" class="btn-reverse" onclick="reverseStations()" title="Swap stations" aria-label="Swap departure and arrival stations">
+                            <button type="button" class="btn-reverse" onclick="reverseStations()" title="Swap stations"
+                                aria-label="Swap departure and arrival stations">
                                 ↔️
                             </button>
                         </div>
@@ -1236,9 +1259,11 @@
                         <!-- To Station -->
                         <div class="form-group">
                             <label class="form-label" for="to_station">To</label>
-                            <select name="to_station" id="to_station" class="form-control" required aria-required="true">
+                            <select name="to_station" id="to_station" class="form-control" required
+                                aria-required="true">
                                 {% for st in stations %}
-                                <option value="{{ st }}" {% if st=="İSTANBUL(SÖĞÜTLÜÇEŞME)" %}selected{% endif %}>{{ st }}</option>
+                                <option value="{{ st }}" {% if st=="İSTANBUL(SÖĞÜTLÜÇEŞME)" %}selected{% endif %}>{{ st
+                                    }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -1246,11 +1271,15 @@
                         <!-- Date -->
                         <div class="form-group">
                             <label class="form-label" for="dateInput">Date</label>
-                            <input type="date" name="date" required id="dateInput" class="form-control" aria-required="true">
+                            <input type="date" name="date" required id="dateInput" class="form-control"
+                                aria-required="true">
                             <div class="quick-dates" role="group" aria-label="Quick date selection">
-                                <button type="button" class="quick-date-btn" data-days="0" aria-label="Select today">Today</button>
-                                <button type="button" class="quick-date-btn" data-days="1" aria-label="Select tomorrow">Tomorrow</button>
-                                <button type="button" class="quick-date-btn" data-days="7" aria-label="Select one week from today">+1 Week</button>
+                                <button type="button" class="quick-date-btn" data-days="0"
+                                    aria-label="Select today">Today</button>
+                                <button type="button" class="quick-date-btn" data-days="1"
+                                    aria-label="Select tomorrow">Tomorrow</button>
+                                <button type="button" class="quick-date-btn" data-days="7"
+                                    aria-label="Select one week from today">+1 Week</button>
                             </div>
                         </div>
 
@@ -1297,8 +1326,11 @@
                         <div class="form-group">
                             <label class="form-label" for="chatIdInput">Telegram Chat ID</label>
                             <div class="input-group">
-                                <input type="number" name="chat_id" id="chatIdInput" value="{{ default_chat_id }}" required class="form-control" aria-required="true" placeholder="Enter your Telegram Chat ID">
-                                <button type="button" id="pasteBtn" class="btn-paste" title="Paste from clipboard" aria-label="Paste chat ID from clipboard">
+                                <input type="number" name="chat_id" id="chatIdInput" value="{{ default_chat_id }}"
+                                    required class="form-control" aria-required="true"
+                                    placeholder="Enter your Telegram Chat ID">
+                                <button type="button" id="pasteBtn" class="btn-paste" title="Paste from clipboard"
+                                    aria-label="Paste chat ID from clipboard">
                                     📋
                                 </button>
                             </div>
@@ -1344,7 +1376,8 @@
                         <span>Found Tickets (All)</span>
                     </h3>
                     <div class="header-actions">
-                        <button class="btn-danger-sm" onclick="clearHistory()" title="Clear all ticket history" aria-label="Clear all ticket history">
+                        <button class="btn-danger-sm" onclick="clearHistory()" title="Clear all ticket history"
+                            aria-label="Clear all ticket history">
                             🗑️ Clear History
                         </button>
                         <div class="status-badge">
@@ -1391,15 +1424,20 @@
         <div class="modal-content">
             <h3 class="modal-title" id="settingsModalTitle">Global Settings</h3>
             <div class="form-group-modal">
-                <label for="settingInterval" style="display:block; margin-bottom: 0.5rem;">Check Interval (Minutes)</label>
-                <input type="number" id="settingInterval" class="form-control" min="1" max="10" value="5" aria-required="true">
-                <small style="color:var(--text-secondary); display:block; margin-top:0.5rem;">Range: 1 - 10 minutes</small>
+                <label for="settingInterval" style="display:block; margin-bottom: 0.5rem;">Check Interval
+                    (Minutes)</label>
+                <input type="number" id="settingInterval" class="form-control" min="1" max="10" value="5"
+                    aria-required="true">
+                <small style="color:var(--text-secondary); display:block; margin-top:0.5rem;">Range: 1 - 10
+                    minutes</small>
             </div>
             <div class="modal-actions">
-                <button onclick="closeSettings()" class="btn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-primary);">
+                <button onclick="closeSettings()" class="btn"
+                    style="background:transparent; border:1px solid var(--border-color); color:var(--text-primary);">
                     Cancel
                 </button>
-                <button onclick="saveSettings()" class="btn" style="background:var(--accent-primary); color:white; border:none;">
+                <button onclick="saveSettings()" class="btn"
+                    style="background:var(--accent-primary); color:white; border:none;">
                     Save
                 </button>
             </div>
@@ -1638,8 +1676,8 @@
             }
 
             if (matches.length === 0) {
-                const message = selectedRuleId 
-                    ? 'No tickets found for this watcher yet.' 
+                const message = selectedRuleId
+                    ? 'No tickets found for this watcher yet.'
                     : 'Waiting for tickets...';
                 container.innerHTML = `
                     <tr>
@@ -1664,15 +1702,15 @@
                 if (m.loca_seats > 0) {
                     seatBadges.push(`<span class="seat-badge loca">${m.loca_seats}</span>`);
                 }
-                const seatInfo = seatBadges.length > 0 
-                    ? `<div class="seat-badge-group">${seatBadges.join('')}</div>` 
+                const seatInfo = seatBadges.length > 0
+                    ? `<div class="seat-badge-group">${seatBadges.join('')}</div>`
                     : `<span class="seat-badge">${m.seats || 0}</span>`;
 
                 // Fix price: Show price for available seats (prioritize economy > business > loca)
                 // This matches the seat availability, not just the minimum price
                 let priceInfo = 0;
                 let priceDisplay = '';
-                
+
                 if (m.economy_seats > 0 && m.economy_price > 0) {
                     priceInfo = m.economy_price;
                     priceDisplay = `${priceInfo.toFixed(2)} TL`;
@@ -1692,11 +1730,11 @@
 
                 // Format date properly
                 const displayDate = formatDate(m.date);
-                
+
                 // Format departure and arrival times
                 const displayDepTime = formatTime(m.time);
                 const displayArrTime = formatTime(m.arr_time || '23:59');
-                
+
                 // Route with train badge
                 const trainName = escapeHtml(m.train || 'TCDD Train');
                 const routeText = escapeHtml(m.route);
@@ -1878,19 +1916,19 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ check_interval_min: val })
             })
-            .then(r => r.json())
-            .then(d => {
-                if (d.status === 'updated') {
-                    showToast('Settings saved!', 'success');
-                    closeSettings();
-                } else {
-                    showToast('Error: ' + (d.error || JSON.stringify(d)), 'error');
-                }
-            })
-            .catch(err => {
-                console.error('Failed to save settings', err);
-                showToast('Error saving settings', 'error');
-            });
+                .then(r => r.json())
+                .then(d => {
+                    if (d.status === 'updated') {
+                        showToast('Settings saved!', 'success');
+                        closeSettings();
+                    } else {
+                        showToast('Error: ' + (d.error || JSON.stringify(d)), 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to save settings', err);
+                    showToast('Error saving settings', 'error');
+                });
         }
 
         // Close modal on outside click
@@ -1916,10 +1954,10 @@
             initializeQuickDateButtons();
             initializePasteButton();
             initializeForm();
-            
+
             // Initial data load
             updateDashboard();
-            
+
             // Set up polling (every 5 seconds)
             pollInterval = setInterval(updateDashboard, 5000);
         }

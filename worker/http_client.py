@@ -2,6 +2,7 @@ import logging
 import requests
 import datetime
 import urllib3
+import os
 from typing import List, Dict
 from common.utils import STATION_MAP, normalize_station
 
@@ -14,22 +15,33 @@ class TCDDHttpClient:
     Replaces the memory-heavy Selenium Scraper.
     """
     def __init__(self):
-        # We observed this auth header in the web_bot project implementation
         self.headers = {
-            'Authorization': 'Basic ZGl0cmF2b3llYnNwOmRpdHJhMzQhdm8u',
-            'User-Agent': 'TCDD/1.0',
-            'Content-Type': 'application/json'
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'tr',
+            'Connection': 'keep-alive',
+            'Content-Type': 'application/json',
+            'Origin': 'https://ebilet.tcddtasimacilik.gov.tr',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
+            'unit-id': '3895'
         }
-        self.sefer_url = "https://api-yebsp.tcddtasimacilik.gov.tr/sefer/seferSorgula"
-        self.vagon_url = "https://api-yebsp.tcddtasimacilik.gov.tr/vagon/vagonHaritasindanYerSecimi"
+        # Pull tokens from Firestore first (source of truth in cloud), fallback to env vars natively defined
+        try:
+            from common.repository import AppConfigRepository
+            auth, u_auth = AppConfigRepository.get_tcdd_jwts()
+        except Exception:
+            auth = os.environ.get("TCDD_JWT_AUTH")
+            u_auth = os.environ.get("TCDD_JWT_USER_AUTH")
+            
+        if auth: self.headers["Authorization"] = auth
+        if u_auth: self.headers["User-Authorization"] = u_auth
+
+        self.sefer_url = "https://web-api-prod-ytp.tcddtasimacilik.gov.tr/tms/train/train-availability?environment=dev&userId=1"
         
         # Load standard station map from common util to translate names to IDs
         import json
         
         self.station_map = STATION_MAP
         
-        # We need the station IDs. Rather than hardcoding, load from the saved json if it exists
-        import os
         base_dir = os.path.dirname(os.path.dirname(__file__))
         stations_path = os.path.join(base_dir, "common", "stations.json")
         try:
@@ -41,23 +53,26 @@ class TCDDHttpClient:
 
     def get_station_id(self, station_name: str) -> int:
         normalized = normalize_station(station_name)
-        # 1. Try mapping the friendly name to the true name
         true_name = self.station_map.get(normalized, station_name)
-        # 2. Try to get ID
+        
+        # Exact match
         station_id = self.station_ids.get(true_name)
+        
+        # Case insensitive matching as fallback
         if not station_id:
-             # Try uppercase
-             station_id = self.station_ids.get(true_name.upper())
+            for k, v in self.station_ids.items():
+                if k.upper() == true_name.upper() or normalize_station(k) == normalized:
+                    return v
+                    
         return station_id or 0
 
     def format_date(self, date_str: str) -> str:
-        """Converts DD.MM.YYYY to the format expected by the API (Mon, 15 Jan 2024)."""
+        """Converts DD.MM.YYYY to the format expected by the API (17-03-2026 00:00:00)."""
         try:
-             # from 25.12.2025 to Dec 25, 2025
              dt = datetime.datetime.strptime(date_str, "%d.%m.%Y")
-             return dt.strftime("%b %d, %Y")
+             return dt.strftime("%d-%m-%Y 00:00:00")
         except:
-             return date_str
+             return f"{date_str} 00:00:00"
 
     def get_trips(self, from_station: str, to_station: str, date_str: str) -> List[Dict]:
         """
@@ -69,28 +84,23 @@ class TCDDHttpClient:
         
         formatted_date = self.format_date(date_str)
         
-        # Mimic the payload from web_bot
         body = {
-            "kanalKodu": 3,
-            "dil": 0,
-            "seferSorgulamaKriterWSDVO": {
-                "satisKanali": 3,
-                "binisIstasyonu": from_station.upper(), # Assuming API wants upper
-                "inisIstasyonu": to_station.upper(),
-                "binisIstasyonId": from_id,
-                "inisIstasyonId": to_id,
-                "binisIstasyonu_isHaritaGosterimi": False,
-                "inisIstasyonu_isHaritaGosterimi": False,
-                "seyahatTuru": 1, 
-                "gidisTarih": f"{formatted_date} 12:00:00 AM",
-                "bolgeselGelsin": False,
-                "islemTipi": 0,
-                "yolcuSayisi": 1,
-                "aktarmalarGelsin": True,
-            }
+            "searchRoutes": [
+                {
+                    "departureStationId": from_id,
+                    "departureStationName": from_station.upper(),
+                    "arrivalStationId": to_id,
+                    "arrivalStationName": to_station.upper(),
+                    "departureDate": formatted_date
+                }
+            ],
+            "passengerTypeCounts": [{"id": 0, "count": 1}],
+            "searchReservation": False,
+            "searchType": "DOMESTIC",
+            "blTrainTypes": []
         }
         
-        logger.info(f"Querying HTTP API for {from_station} -> {to_station} on {formatted_date}")
+        logger.info(f"Querying HTTP API for {from_station} ({from_id}) -> {to_station} ({to_id}) on {formatted_date}")
         if not from_id or not to_id:
             raise ValueError(
                 f"Station ID lookup failed: from_station={from_station}, to_station={to_station}, "
@@ -115,95 +125,58 @@ class TCDDHttpClient:
             raise
             
         parsed_trips = []
-        if data.get('cevapBilgileri', {}).get('cevapKodu') == '000':
-            for sefer in data.get('seferSorgulamaSonucList', []):
-                try:
-                    # Parse binisTarih e.g., "Jan 15, 2024 07:10:00 AM" into "07:10"
-                    sefer_time_dt = datetime.datetime.strptime(sefer['binisTarih'], "%b %d, %Y %I:%M:%S %p")
-                    dep_time = sefer_time_dt.strftime("%H:%M")
-                    
-                    # Similar for arrival
-                    arr_time_dt = datetime.datetime.strptime(sefer['inisTarih'], "%b %d, %Y %I:%M:%S %p")
-                    arr_time = arr_time_dt.strftime("%H:%M")
-                    
-                    trip_info = {
-                        "date": date_str,
-                        "dep_time": dep_time,
-                        "arr_time": arr_time,
-                        "train_name": sefer.get('trenAdi', 'Unknown Train'),
-                        "economy_seats": 0,
-                        "economy_price": 0.0,
-                        "business_seats": 0,
-                        "business_price": 0.0,
-                        "loca_seats": 0,
-                        "loca_price": 0.0
-                    }
-                    
-                    # Process Wagons
-                    for vagon in sefer.get('vagonTipleriBosYerUcret', []):
-                        vagon_type = vagon.get('vagonTipi', '').lower()
-                        price = float(vagon.get('standartBiletFiyati', 0.0))
+        if "trainLegs" in data and len(data["trainLegs"]) > 0:
+            for avail in data["trainLegs"][0].get("trainAvailabilities", []):
+                for train in avail.get("trains", []):
+                    try:
+                        segments = train.get("segments", [])
+                        if not segments:
+                            continue
+                            
+                        dep_time_ms = segments[0].get("departureTime")
+                        arr_time_ms = segments[-1].get("arrivalTime")
                         
-                        # We must query the vagon specific endpoint to get true seat availability
-                        # since seferSorgula doesn't differentiate between regular and handicapped seats
-                        available_seats = 0
+                        dep_time = datetime.datetime.fromtimestamp(dep_time_ms / 1000.0).strftime("%H:%M")
+                        arr_time = datetime.datetime.fromtimestamp(arr_time_ms / 1000.0).strftime("%H:%M")
                         
-                        for vagon_detail in vagon.get('vagonListesi', []):
-                             vagon_sira_no = vagon_detail.get('vagonSiraNo')
-                             # Query details
-                             available_seats += self._check_specific_seats(
-                                  seferId=sefer.get('seferId'),
-                                  vagon_sira_no=vagon_sira_no,
-                                  binis_ist=from_station.upper(),
-                                  inis_ist=to_station.upper()
-                             )
-
-                        # Assign to corresponding type
-                        if "ekonomi" in vagon_type or "standart" in vagon_type or "pulman" in vagon_type:
-                            trip_info["economy_seats"] += available_seats
-                            if price > 0 and trip_info["economy_price"] == 0.0:
-                                trip_info["economy_price"] = price
-                        elif "busin" in vagon_type or "business" in vagon_type:
-                            trip_info["business_seats"] += available_seats
-                            if price > 0 and trip_info["business_price"] == 0.0:
-                                trip_info["business_price"] = price
-                        elif "loca" in vagon_type or "oda" in vagon_type:
-                            trip_info["loca_seats"] += available_seats
-                            if price > 0 and trip_info["loca_price"] == 0.0:
-                                trip_info["loca_price"] = price
-                    
-                    parsed_trips.append(trip_info)
-                except Exception as ex:
-                    logger.error(f"Error parsing sefer data: {ex}")
-                    continue
-                    
+                        trip_info = {
+                            "date": date_str,
+                            "dep_time": dep_time,
+                            "arr_time": arr_time,
+                            "train_name": train.get('commercialName', train.get('name', 'Unknown Train')),
+                            "economy_seats": 0,
+                            "economy_price": 0.0,
+                            "business_seats": 0,
+                            "business_price": 0.0,
+                            "loca_seats": 0,
+                            "loca_price": 0.0
+                        }
+                        
+                        fare_info = train.get("availableFareInfo", [])
+                        for fare in fare_info:
+                            for cc in fare.get("cabinClasses", []):
+                                class_code = cc.get("cabinClass", {}).get("code", "").upper() if cc.get("cabinClass") else ""
+                                cc_name = cc.get("cabinClass", {}).get("name", "").upper() if cc.get("cabinClass") else ""
+                                seats = cc.get("availabilityCount", 0)
+                                price = cc.get("minPrice") or 0.0
+                                
+                                if "EKONOM" in cc_name or class_code in ["Y1", "Y2", "Y"]:
+                                    trip_info["economy_seats"] += seats
+                                    if price > 0 and (trip_info["economy_price"] == 0.0 or price < trip_info["economy_price"]):
+                                        trip_info["economy_price"] = float(price)
+                                elif "BUS" in cc_name or class_code in ["C", "C1"]:
+                                    trip_info["business_seats"] += seats
+                                    if price > 0 and (trip_info["business_price"] == 0.0 or price < trip_info["business_price"]):
+                                        trip_info["business_price"] = float(price)
+                                elif "LOCA" in cc_name or class_code in ["L"]:
+                                    trip_info["loca_seats"] += seats
+                                    if price > 0 and (trip_info["loca_price"] == 0.0 or price < trip_info["loca_price"]):
+                                        trip_info["loca_price"] = float(price)
+                                        
+                        parsed_trips.append(trip_info)
+                    except Exception as ex:
+                        logger.error(f"Error parsing sefer data: {ex}")
+                        continue
+                        
         return parsed_trips
 
-    def _check_specific_seats(self, seferId, vagon_sira_no, binis_ist, inis_ist) -> int:
-        body = {
-            "kanalKodu": "3",
-            "dil": 0,
-            "seferBaslikId": seferId,
-            "vagonSiraNo": vagon_sira_no,
-            "binisIst": binis_ist,
-            "InisIst": inis_ist
-        }
-        
-        non_handicapped_seats = 0
-        try:
-            response = requests.post(self.vagon_url, json=body, headers=self.headers, timeout=10, verify=False)
-            response.raise_for_status()
-            data = response.json()
-            
-            if data.get('cevapBilgileri', {}).get('cevapKodu') == '000':
-                for seat in data.get('vagonHaritasiIcerikDVO', {}).get('koltukDurumlari', []):
-                    # durum 0 == Available
-                    if seat.get('durum') == 0:
-                        koltukNo = str(seat.get('koltukNo', ''))
-                        if not koltukNo.lower().endswith('h'): 
-                            non_handicapped_seats += 1
-                            
-        except Exception as e:
-            logger.debug(f"Failed to check seats for vagon {vagon_sira_no}: {e}")
-            
-        return non_handicapped_seats

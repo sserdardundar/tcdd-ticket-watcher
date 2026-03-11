@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     ADMIN_TOKEN: str = ""
     GCP_PROJECT_ID: str = os.getenv("GOOGLE_CLOUD_PROJECT", "tcdd-ticket-watcher")
     
+    TCDD_JWT_AUTH: str = ""
+    TCDD_JWT_USER_AUTH: str = ""
+    
     # Defaults
     CHECK_INTERVAL_MIN: int = 5
     CHECK_INTERVAL_SEC: int = 300

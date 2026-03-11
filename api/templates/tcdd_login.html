@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCDD Token Configuration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-card: rgba(26, 26, 46, 0.85);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-primary: #f59e0b;
+            /* Orange/Warning theme for config */
+            --accent-secondary: #d97706;
+            --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+            --success-color: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(ellipse at 30% 30%, rgba(245, 158, 11, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 70%, rgba(217, 119, 6, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .config-card {
+            position: relative;
+            z-index: 1;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            display: block;
+            filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.4));
+        }
+
+        .title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            font-family: inherit;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15);
+        }
+
+        .btn-save {
+            width: 100%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-back {
+            display: inline-block;
+            margin-top: 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+            text-align: center;
+            width: 100%;
+        }
+
+        .btn-back:hover {
+            color: white;
+        }
+
+        .helper-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.1 5);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .helper-box a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .helper-box a:hover {
+            text-decoration: underline;
+        }
+
+        .helper-box ol {
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .helper-box li {
+            margin-bottom: 0.25rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="config-card">
+        <div class="header">
+            <span class="icon">🔑</span>
+            <h1 class="title">TCDD Authentication Auth Fallback</h1>
+            <p class="subtitle">Update the API Bearer tokens used by the background worker. Normally these last a long
+                time, but if the TCDD backend expires them (Auth Error 401), you can manually paste fresh ones here to
+                bypass their WAF IP blocks.</p>
+        </div>
+
+        <div class="helper-box">
+            <p><strong>Option 1: Sign in Programmatically</strong> (May be blocked by TCDD Cloudflare/WAF)</p>
+            {% if error %}
+            <div
+                style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                {{ error }}
+            </div>
+            {% endif %}
+            {% if success %}
+            <div
+                style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16,185,129,0.3); color: #10b981; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                {{ success }}
+            </div>
+            {% endif %}
+            <form action="/tcdd-auth/login" method="POST" style="margin-top: 1rem; margin-bottom: 2rem;">
+                <div class="form-group">
+                    <label class="form-label">TCDD Email</label>
+                    <input type="email" class="form-control" name="email" style="min-height: auto;"
+                        placeholder="mail@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">TCDD Password</label>
+                    <input type="password" class="form-control" name="password" style="min-height: auto;"
+                        placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-save"
+                    style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); width: auto; padding: 0.75rem 1.5rem;">Attempt
+                    Login</button>
+            </form>
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 2rem 0;">
+            <p><strong>Option 2: Manual Token Fallback (Guaranteed to work)</strong></p>
+            <ol>
+                <li>Open <a href="https://ebilet.tcddtasimacilik.gov.tr/" target="_blank">TCDD e-Bilet</a> in a new tab.
+                </li>
+                <li>Login with your TCDD account (so the User Token is generated).</li>
+                <li>Press <strong>F12</strong> to open Developer Tools, go to the <strong>Network</strong> tab.</li>
+                <li>Search for a train trip. Click any API request (like <code>train-availability</code>).</li>
+                <li>Look at the <strong>Request Headers</strong>. Copy the values for <code>Authorization</code> and
+                    <code>User-Authorization</code>.
+                </li>
+            </ol>
+        </div>
+
+        <form action="/tcdd-auth" method="POST">
+            <div class="form-group">
+                <label class="form-label">TCDD_JWT_AUTH (Guest Token)</label>
+                <textarea class="form-control" name="auth" placeholder="Bearer eyJhbGciOiJSUzI1NiIs..."
+                    required>{{ auth }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">TCDD_JWT_USER_AUTH (User Token)</label>
+                <textarea class="form-control" name="user_auth" placeholder="eyJhbGciOiJSUzI1NiIs..."
+                    required>{{ user_auth }}</textarea>
+            </div>
+
+            <button type="submit" class="btn-save">
+                <span>💾</span>
+                <span>Save Configuration</span>
+            </button>
+        </form>
+        <a href="/" class="btn-back">← Back to Dashboard</a>
+    </div>
+</body>
+
+</html>

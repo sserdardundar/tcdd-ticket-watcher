@@ -110,7 +110,8 @@ curl -X POST https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=<CLOUD_
 💺 Seats: 192
 💰 Price: 780.00 TL
 
-[🛒 Buy Ticket] [🔔 Notify Again]
+[📱 Open E-Bilet App] [🌐 Buy on Web]
+[🔔 Notify Me Again]
 ```
 
 ### Managing Watchers
@@ -132,6 +133,7 @@ curl -X POST https://api.telegram.org/bot<TELEGRAM_TOKEN>/setWebhook?url=<CLOUD_
 - **Ticket Type Selection** dropdown
 - **Clear History** button to reset all ticket history
 - **Relook Button** to re-enable notifications for specific trains
+- **TCDD Auth Configurator** to manually configure or inject Keycloak tokens if the TCDD API acts up
 
 ### Creating a Watcher via Web
 
@@ -179,6 +181,17 @@ Shows all discovered tickets with:
 - `watch_rules` - User-defined ticket watcher configs
 - `trip_snapshots` - Log of discovered available tickets
 - `alert_cache` - Deduplication cache so you aren't spammed
+- `system` - Application settings and fallback authentication JWTs
+
+---
+
+## 💻 Local Development
+
+You can run the full stack locally using Docker Compose without needing GCP deployment.
+
+1. Copy `.env.example` to `.env` and fill in your keys.
+2. Run `docker-compose up --build`
+3. The dashboard will be available at `http://localhost:8000`
 
 ---
 

@@ -159,6 +159,19 @@ class AppConfigRepository:
         doc_ref = db.collection(AppConfigRepository.COLLECTION).document(AppConfigRepository.DOC_ID)
         doc_ref.set({"check_interval_min": minutes}, merge=True)
 
+    @staticmethod
+    def get_tcdd_jwts() -> tuple[str, str]:
+        doc = db.collection(AppConfigRepository.COLLECTION).document("tcdd_auth").get()
+        if doc.exists:
+            data = doc.to_dict()
+            return data.get("jwt_auth", settings.TCDD_JWT_AUTH), data.get("jwt_user_auth", settings.TCDD_JWT_USER_AUTH)
+        return settings.TCDD_JWT_AUTH, settings.TCDD_JWT_USER_AUTH
+        
+    @staticmethod
+    def set_tcdd_jwts(auth: str, user_auth: str):
+        doc_ref = db.collection(AppConfigRepository.COLLECTION).document("tcdd_auth")
+        doc_ref.set({"jwt_auth": auth, "jwt_user_auth": user_auth, "updated_at": datetime.now(timezone.utc)}, merge=True)
+
 
 class AlertCacheRepository:
     """Replaces Redis TTL cache for deduping alerts"""
